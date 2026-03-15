@@ -32,7 +32,7 @@
             <canvas id="telemetryChart"></canvas>
         </div>
         <footer>
-            <span>STDAMS &copy; 2025 | Hackathon Edition</span>
+            <span>STDAMS &copy; 2026 | Skybit Team</span>
         </footer>
     </div>
     <script src="/static/chart.js"></script>
@@ -77,15 +77,28 @@
                 document.getElementById('anomaly-score').textContent = 'Score: ' + score;
             });
         }
-        function updateAlert() {
-            fetch('/api/alerts').then(r=>r.json()).then(data=>{
-                let msg = data.message || 'All systems normal.';
-                let level = data.level || 'NORMAL';
-                let alertCard = document.getElementById('alert-card');
-                document.getElementById('alert-message').textContent = msg;
-                alertCard.className = 'glass-card ' + (level === 'CRITICAL' ? 'card-critical' : (level === 'WARNING' ? 'card-warning' : 'card-normal'));
+        // Pehle ye line function ke upar (bahar) add karein taaki sound load ho jaye
+const alertSound = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+
+function updateAlert() {
+    fetch('/api/alerts').then(r=>r.json()).then(data=>{
+        let msg = data.message || 'All systems normal.';
+        let level = data.level || 'NORMAL';
+        let alertCard = document.getElementById('alert-card');
+        
+        document.getElementById('alert-message').textContent = msg;
+        alertCard.className = 'glass-card ' + (level === 'CRITICAL' ? 'card-critical' : (level === 'WARNING' ? 'card-warning' : 'card-normal'));
+
+        // --- YAHAN HAI NAYA LOGIC ---
+        // Agar level CRITICAL ya WARNING hai, toh beep bajao
+        if (level === 'CRITICAL' || level === 'WARNING') {
+            alertSound.play().catch(e => {
+                console.log("Audio play block hua: Ek baar page par click karein!");
             });
         }
+    });
+}
+        
         function refreshAll() {
             updateTelemetry();
             updateAnomaly();
@@ -93,21 +106,51 @@
         }
         window.onload = function() {
             const ctx = document.getElementById('telemetryChart').getContext('2d');
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: chartData,
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { labels: { color: '#fff', font: { size: 14 } } }
-                    },
-                    scales: {
-                        y: { type: 'linear', position: 'left', min: 340, max: 460, grid: { color: '#222' }, ticks: { color: '#00ffe7' } },
-                        y1: { type: 'linear', position: 'right', min: 7, max: 8.5, grid: { drawOnChartArea: false }, ticks: { color: '#ff00c8' } },
-                        y2: { type: 'linear', position: 'right', min: 60, max: 100, grid: { drawOnChartArea: false }, ticks: { color: '#ffe600' } }
-                    }
-                }
-            });
+           chart = new Chart(ctx, {
+    type: 'bar', // Yahan 'line' ki jagah 'bar' kar diya gaya hai
+    data: chartData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { labels: { color: '#fff', font: { size: 14 } } }
+        },
+        // Bars ki styling
+        elements: {
+            bar: {
+                borderWidth: 2,
+                borderRadius: 5, // Bars ke corners thode round rahenge
+                borderSkipped: false
+            }
+        },
+        scales: {
+            y: { 
+                type: 'linear', 
+                position: 'left', 
+                min: 340, 
+                max: 460, 
+                grid: { color: 'rgba(255,255,255,0.1)' }, 
+                ticks: { color: '#00ffe7' } 
+            },
+            y1: { 
+                type: 'linear', 
+                position: 'right', 
+                min: 7, 
+                max: 8.5, 
+                grid: { display: false }, 
+                ticks: { color: '#ff00c8' } 
+            },
+            y2: { 
+                type: 'linear', 
+                position: 'right', 
+                min: 60, 
+                max: 100, 
+                grid: { display: false }, 
+                ticks: { color: '#ffe600' } 
+            }
+        }
+    }
+}); 
             refreshAll();
             setInterval(refreshAll, 5000);
         }
